@@ -83,10 +83,49 @@ modifier activeProposalOnly(uint256 proposalIndex) {
 
 enum Vote {
     YAY, // YAY = 0
-    NAY, // NAY = 1
+    NAY  // NAY = 1
+}
+
+function voteOnProposal(uint256 proposalIndex, Vote vote) 
+    external
+    nftHolderOnly
+    activeProposalOnly(proposalIndex)
+{
+    Proposal storage proposal = proposals[proposalIndex];
+
+    uint256 voterNFTBalance = cryptoDevsNFT.balanceOf(msg.sender);
+    uint256 numVotes = 0;
+
+    // Calculate how many NFTs are owned by the voter
+    // that hasn't been used for voting on this proposal
+    for (uint256 i = 0; i < voterNFTBalance; i++) {
+        uint256 tokenId = cryptoDevsNFT.tokenOfOwnerByIndex(msg.sender, i);
+        if (proposal.voters[tokenId] == false) {
+            numVotes++;
+            proposal.voters[tokenId] = true;
+        }
+    }
+
+    require(numVotes > 0, "ALREADY_VOTED");
+
+    if (vote == Vote.YAY) {
+        proposal.yayVotes += numVotes;
+    } else {
+        proposal.nayVotes += numVotes;
+    }
 }
 
 
+modifier inactiveProposalOnly(uint256 proposalIndex) {
+    require(
+        proposals[proposalIndex].deadline <= block.timestamp
+    );
+    require(
+        proposals[proposalIndex].executed == false,
+        "PROPOSAL_ALREADY_EXECUTED"
+    );
+    _;
+}
 
 
 

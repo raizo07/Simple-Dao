@@ -127,7 +127,20 @@ modifier inactiveProposalOnly(uint256 proposalIndex) {
     _;
 }
 
+function executeProposal(uint256 proposalIndex) 
+    external
+    nftHolderOnly
+    inactiveProposalOnly(proposalIndex)
+    {
+        Proposal storage proposal = proposals[propoalIndex];
 
+        if (proposal.yayVotes > proposal.nayVotes) {
+            uint256 nftPrice = nftMarketplace.getPrice();
+            require(address(this).balance >= nftPrice, "NOT_ENOUGH_FUNDS");
+            nftMarketplace.purchase{value: nftPrice}(proposal.nftTokenId);
+        }
+        proposal.executed = true;
+    }
 
 
 
